@@ -77,19 +77,7 @@ public class IPLAnalysis {
                 }
             }
         }
-//            List<String[]> list = reader.readAll();
-//            list.remove(0);
-//            for (String[] nextLine : list) {
-//                if (Integer.parseInt(nextLine[0]) > 577 && Integer.parseInt(nextLine[16]) > 0) {
-//                    String team = nextLine[3];
-//                    int extraruns = Integer.parseInt(nextLine[16]);
-//                    if (map.containsKey(team)) {
-//                        map.put(team, map.get(team) + extraruns);
-//                    } else {
-//                        map.put(team, extraruns);
-//                    }
-//                }
-//            }
+
 
         return map;
     }
@@ -98,7 +86,7 @@ public class IPLAnalysis {
         Map<String, Integer> runs_Conceded = new HashMap<>();
         Map<String, Integer> balls_bowled = new HashMap<>();
             List<String[]> list = reader.readAll();
-            list.remove(0);
+            list.removeFirst();
             for (String[] strings : list) {
                 int match_id = Integer.parseInt(strings[0]);
                 int total_runs = Integer.parseInt(strings[17]);
