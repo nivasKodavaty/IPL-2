@@ -1,11 +1,7 @@
 package org.example;
 
 import com.opencsv.CSVReader;
-import com.opencsv.exceptions.CsvException;
-import com.opencsv.exceptions.CsvValidationException;
-
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.*;
 
 public class IPLAnalysis {
@@ -16,11 +12,11 @@ public class IPLAnalysis {
     public static void main(String[] args) {
         ArrayList<Matches> matchesData = getMatchesData();
         ArrayList<Deliveries> deliveriesData = getDeliveriesData();
-//        System.out.println(getMatchesPlayed(matchesData));
-//        System.out.println(getMatchesWonByTeam(matchesData));
-        System.out.println(runsConceded(deliveriesData));
 
-
+        System.out.println(getMatchesPlayed(matchesData));
+        System.out.println(getMatchesWonByTeam(matchesData));
+        System.out.println(getRunsConceded(deliveriesData));
+        System.out.println(getEconomicalBowlers(deliveriesData));
 
     }
 
@@ -88,10 +84,11 @@ public class IPLAnalysis {
                 matchData.setVenue(nextLine[14]);
                 matchData.setUmpire1(nextLine[15]);
                 matchData.setUmpire2(nextLine[16]);
-                matchesArrayList.add(matchData);
 
+                matchesArrayList.add(matchData);
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -118,7 +115,7 @@ public class IPLAnalysis {
         return matchesWonByTeam;
     }
 
-    public static Map<String, Integer> runsConceded(ArrayList<Deliveries> deliveriesData) {
+    public static Map<String, Integer> getRunsConceded(ArrayList<Deliveries> deliveriesData) {
         Map<String, Integer> runsConcedeByTeams = new HashMap<>();
         for (Deliveries deliveries : deliveriesData) {
             int match_id = deliveries.getMatchId();
@@ -135,53 +132,37 @@ public class IPLAnalysis {
                 }
             }
         }
-
         return runsConcedeByTeams;
     }
 
-    public static Map<String, Double> economicalBowlers(CSVReader reader) throws IOException, CsvException {
-        Map<String, Integer> runs_Conceded = new HashMap<>();
-        Map<String, Integer> balls_bowled = new HashMap<>();
-        List<String[]> list = reader.readAll();
-        list.removeFirst();
-        for (String[] strings : list) {
-            int match_id = Integer.parseInt(strings[0]);
-            int total_runs = Integer.parseInt(strings[17]);
-            String bowler = strings[8];
-            if ((match_id >= 518 && match_id <= 576)) {
-                if (balls_bowled.containsKey(bowler)) {
-                    balls_bowled.put(bowler, balls_bowled.get(bowler) + 1);
-                } else {
-                    balls_bowled.put(bowler, 1);
-                }
-            }
-
-            if ((match_id >= 518 && match_id <= 576) && total_runs > 0) {
-                if (runs_Conceded.containsKey(bowler)) {
-                    runs_Conceded.put(bowler, runs_Conceded.get(bowler) + total_runs);
-                } else {
-                    runs_Conceded.put(bowler, total_runs);
-                }
+    public static Map<String, Double> getEconomicalBowlers(ArrayList<Deliveries> deliveriesData) { // Map to store total balls bowled by each bowler
+        HashMap<String, Integer> balls_bowled = new HashMap<>();
+        HashMap<String, Integer> runs_conceded = new HashMap<>();
+        for (Deliveries delivery : deliveriesData) {
+            int match_id = delivery.getMatchId();
+            if (match_id > 517 && match_id < 577) {
+                String bowler = delivery.getBowler();
+                int total_runs = delivery.getTotal_runs();
+                balls_bowled.put(bowler, balls_bowled.getOrDefault(bowler, 0) + 1);
+                runs_conceded.put(bowler, runs_conceded.getOrDefault(bowler, 0) + total_runs);
             }
         }
-        TreeMap<String, Double> economy = new TreeMap<>();
-        for (String s : balls_bowled.keySet()) {
-            double overs = (double) balls_bowled.get(s) / 6;
-            economy.put(s, (double) runs_Conceded.get(s) / overs);
+        TreeMap<String, Double> bowlers_economy = new TreeMap<>();
+        for (String bowler : balls_bowled.keySet()) {
+            int balls = balls_bowled.get(bowler);
+            int runs = runs_conceded.getOrDefault(bowler, 0);
 
+            double economyRate = (double) runs / (balls / 6.0);
+            bowlers_economy.put(bowler, economyRate);
         }
-        HashMap<String, Double> sortedAndtrimmed = new HashMap<>();
-        int count = 0;
-        for (Map.Entry<String, Double> entry : economy.entrySet()) {
-            if (count > 10) {
-                break;
-            }
-            sortedAndtrimmed.put(entry.getKey(), entry.getValue());
-            count++;
-
+        List<Map.Entry<String, Double>> sortedBowlers = new ArrayList<>(bowlers_economy.entrySet());
+        sortedBowlers.sort(Map.Entry.comparingByValue());
+        HashMap<String, Double> top10EconomicalBowlers = new LinkedHashMap<>();
+        for (int i = 0; i < 10; i++) {
+            Map.Entry<String, Double> entry = sortedBowlers.get(i);
+            top10EconomicalBowlers.put(entry.getKey(), entry.getValue());
         }
-
-        return sortedAndtrimmed;
+        return top10EconomicalBowlers;
     }
 
 }
