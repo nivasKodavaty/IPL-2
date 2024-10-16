@@ -12,12 +12,54 @@ public class IPLAnalysis {
     static String matchesFile = "/Users/nivaskodavaty/Desktop/IPL-2/src/data/IPL Matches.csv";
     static String deliveriesFile = "/Users/nivaskodavaty/Desktop/IPL-2/src/data/deliveries.csv";
 
+
     public static void main(String[] args) {
         ArrayList<Matches> matchesData = getMatchesData();
-        System.out.println(getMatchesPlayed(matchesData));
-        System.out.println(getMatchesWonByTeam(matchesData));
+        ArrayList<Deliveries> deliveriesData = getDeliveriesData();
+//        System.out.println(getMatchesPlayed(matchesData));
+//        System.out.println(getMatchesWonByTeam(matchesData));
+        System.out.println(runsConceded(deliveriesData));
 
 
+
+    }
+
+    public static ArrayList<Deliveries> getDeliveriesData() {
+        ArrayList<Deliveries> deliveriesArrayList = new ArrayList<>();
+        CSVReader deliveriesReader;
+        try {
+            deliveriesReader = new CSVReader(new FileReader(deliveriesFile));
+            deliveriesReader.readNext();
+            String[] nextLine;
+            while ((nextLine = deliveriesReader.readNext()) != null) {
+                Deliveries deliveriesData = new Deliveries();
+                deliveriesData.setMatchId(Integer.parseInt(nextLine[0]));
+                deliveriesData.setInning(Integer.parseInt(nextLine[1]));
+                deliveriesData.setBattingTeam(nextLine[2]);
+                deliveriesData.setBowlingTeam(nextLine[3]);
+                deliveriesData.setOver(Integer.parseInt(nextLine[4]));
+                deliveriesData.setBall(Integer.parseInt(nextLine[5]));
+                deliveriesData.setBatsman(nextLine[6]);
+                deliveriesData.setNon_striker(nextLine[7]);
+                deliveriesData.setBowler(nextLine[8]);
+                deliveriesData.setIs_super_over(Integer.parseInt(nextLine[9]));
+                deliveriesData.setWide_runs(Integer.parseInt(nextLine[10]));
+                deliveriesData.setBye_runs(Integer.parseInt(nextLine[11]));
+                deliveriesData.setLegbye_runs(Integer.parseInt(nextLine[12]));
+                deliveriesData.setNo_ball_runs(Integer.parseInt(nextLine[13]));
+                deliveriesData.setPenalty_runs(Integer.parseInt(nextLine[14]));
+                deliveriesData.setBatsmen_runs(Integer.parseInt(nextLine[15]));
+                deliveriesData.setExtra_runs(Integer.parseInt(nextLine[16]));
+                deliveriesData.setTotal_runs(Integer.parseInt(nextLine[17]));
+
+                deliveriesArrayList.add(deliveriesData);
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return deliveriesArrayList;
     }
 
     public static ArrayList<Matches> getMatchesData() {
@@ -62,7 +104,6 @@ public class IPLAnalysis {
             int season = matches.getSeason();
             matchesPlayedPerYear.put(season, matchesPlayedPerYear.getOrDefault(season, 0) + 1);
         }
-
         return matchesPlayedPerYear;
 
     }
@@ -71,27 +112,31 @@ public class IPLAnalysis {
         HashMap<String, Integer> matchesWonByTeam = new HashMap<>();
         for (Matches matches : matchesData) {
             String winner = matches.getWinner();
+            if (winner!="")
             matchesWonByTeam.put(winner, matchesWonByTeam.getOrDefault(winner, 0) + 1);
         }
         return matchesWonByTeam;
     }
 
-    public static Map<String, Integer> runsConceded(CSVReader reader) throws IOException, CsvException {
-        Map<String, Integer> map = new HashMap<>();
-        String[] nextLine;
-        reader.readNext();
-        while ((nextLine = reader.readNext()) != null) {
-            if (Integer.parseInt(nextLine[0]) > 577 && Integer.parseInt(nextLine[16]) > 0) {
-                String team = nextLine[3];
-                int extraruns = Integer.parseInt(nextLine[16]);
-                if (map.containsKey(team)) {
-                    map.put(team, map.get(team) + extraruns);
-                } else {
-                    map.put(team, extraruns);
+    public static Map<String, Integer> runsConceded(ArrayList<Deliveries> deliveriesData) {
+        Map<String, Integer> runsConcedeByTeams = new HashMap<>();
+        for (Deliveries deliveries : deliveriesData) {
+            int match_id = deliveries.getMatchId();
+            if (match_id >= 577) {
+                int runs_conceded = deliveries.getTotal_runs();
+                if (runs_conceded > 0) {
+                    String bowling_team = deliveries.getBowlingTeam();
+                    if (runsConcedeByTeams.containsKey(bowling_team)){
+                        runsConcedeByTeams.put(bowling_team, runsConcedeByTeams.get(bowling_team)+runs_conceded);
+                    }
+                    else {
+                        runsConcedeByTeams.put(bowling_team, 0);
+                    }
                 }
             }
         }
-        return map;
+
+        return runsConcedeByTeams;
     }
 
     public static Map<String, Double> economicalBowlers(CSVReader reader) throws IOException, CsvException {
